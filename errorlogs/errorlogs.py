@@ -29,6 +29,11 @@ import discord
 from redbot.core import Config, checks, commands, data_manager
 from redbot.core.utils.chat_formatting import box, pagify
 
+try:
+    from audio_exp_mart.errors import TrackEnqueueError
+except ImportError:
+    pass
+
 from .reaction_menu import LogScrollingMenu
 
 __all__ = ["UNIQUE_ID", "ErrorLogs"]
@@ -41,6 +46,8 @@ IGNORED_ERRORS = (
     commands.CheckFailure,
     commands.NoPrivateMessage,
     commands.CommandOnCooldown,
+    commands.MaxConcurrencyReached,
+    TrackEnqueueError,
 )
 LATEST_LOG_RE = re.compile(r"latest(?:-part(?P<part>\d+))?\.log")
 
@@ -67,9 +74,7 @@ class ErrorLogs(commands.Cog):
                     "Enabled in this channel: {}\n"
                     "Errors are logged from: {}".format(
                         await settings.enabled(),
-                        "Everywhere"
-                        if await settings.global_errors()
-                        else "This server only",
+                        "Everywhere" if await settings.global_errors() else "This server only",
                     )
                 )
             )
@@ -120,16 +125,12 @@ class ErrorLogs(commands.Cog):
 
         latest_logs.sort(reverse=True)
 
-        task = asyncio.create_task(
-            LogScrollingMenu.send(ctx, latest_logs, page_size, num_pages)
-        )
+        task = asyncio.create_task(LogScrollingMenu.send(ctx, latest_logs, page_size, num_pages))
         task.add_done_callback(self._remove_task)
         self._tasks.append(task)
 
     @commands.Cog.listener()
-    async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
-    ):
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         """Fires when a command error occurs and logs them."""
         if isinstance(error, IGNORED_ERRORS):
             return
@@ -141,9 +142,7 @@ class ErrorLogs(commands.Cog):
             return
 
         error_title = f"Exception in command `{ctx.command.qualified_name}` ¯\\_(ツ)_/¯"
-        log = "".join(
-            traceback.format_exception(type(error), error, error.__traceback__)
-        )
+        log = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         msg_url = ctx.message.jump_url
 
         embed = discord.Embed(
@@ -165,15 +164,11 @@ class ErrorLogs(commands.Cog):
 
         if ctx.guild is not None:
             embed.add_field(name="Server", value=ctx.guild.name)
-            nonembed_context += (
-                f"Channel: #{ctx.channel.name}\nServer: {ctx.guild.name}"
-            )
+            nonembed_context += f"Channel: #{ctx.channel.name}\nServer: {ctx.guild.name}"
         else:
             nonembed_context += "Channel " + str(ctx.channel)
 
-        nonembed_message = f"{error_title} {msg_url} " + box(
-            nonembed_context, lang="yaml"
-        )
+        nonembed_message = f"{error_title} {msg_url} " + box(nonembed_context, lang="yaml")
 
         for channel, settings in channels_and_settings:
             diff_guild = not settings.get("global_errors") and (
@@ -181,7 +176,7 @@ class ErrorLogs(commands.Cog):
             )
             if diff_guild:
                 continue
-            if channel.permissions_for(ctx.me).embed_links:
+            if channel.permissions_for(getattr(channel, "guild", channel).me).embed_links:
                 await channel.send(embed=embed)
             else:
                 await channel.send(nonembed_message)
