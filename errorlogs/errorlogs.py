@@ -131,8 +131,16 @@ class ErrorLogs(commands.Cog):
         self._tasks.append(task)
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        """Fires when a command error occurs and logs them."""
+    async def on_command_error(
+        self, ctx: commands.Context, error: commands.CommandError, unhandled_by_cog=False
+    ):
+        if not unhandled_by_cog:
+            if hasattr(ctx.command, "on_error"):
+                return
+
+            if ctx.cog:
+                if commands.Cog._get_overridden_method(ctx.cog.cog_command_error) is not None:
+                    return
         if isinstance(error, IGNORED_ERRORS):
             return
         all_dict = await self.conf.all_channels()
