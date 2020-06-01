@@ -30,7 +30,7 @@ from redbot.core import Config, checks, commands, data_manager
 from redbot.core.utils.chat_formatting import box, pagify
 
 try:
-    from audio_exp_mart.errors import TrackEnqueueError
+    from audio_exp_mart.errors import TrackEnqueueError, PHNSFWError
 except ImportError:
     pass
 
@@ -48,6 +48,7 @@ IGNORED_ERRORS = (
     commands.CommandOnCooldown,
     commands.MaxConcurrencyReached,
     TrackEnqueueError,
+    PHNSFWError,
 )
 LATEST_LOG_RE = re.compile(r"latest(?:-part(?P<part>\d+))?\.log")
 
