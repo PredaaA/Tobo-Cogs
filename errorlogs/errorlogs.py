@@ -29,11 +29,6 @@ import discord
 from redbot.core import Config, checks, commands, data_manager
 from redbot.core.utils.chat_formatting import box, pagify
 
-try:
-    from audio_exp_mart.errors import TrackEnqueueError, PHNSFWError
-except ImportError:
-    pass
-
 from .reaction_menu import LogScrollingMenu
 
 __all__ = ["UNIQUE_ID", "ErrorLogs"]
@@ -47,8 +42,6 @@ IGNORED_ERRORS = (
     commands.NoPrivateMessage,
     commands.CommandOnCooldown,
     commands.MaxConcurrencyReached,
-    TrackEnqueueError,
-    PHNSFWError,
 )
 LATEST_LOG_RE = re.compile(r"latest(?:-part(?P<part>\d+))?\.log")
 
